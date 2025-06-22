@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalAI Analyzer - Análisis Múltiple (V3)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="demo-badge">🚀 VERSIÓN 3.0</div>
+            <h1>LegalAI Analyzer</h1>
+            <p>Analiza múltiples documentos con feedback en tiempo real</p>
+        </div>
+        
+        <div class="main-card">
+            <div id="uploadContainer">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📂</div>
+                    <div class="upload-text">Arrastra tus documentos aquí</div>
+                    <div class="upload-subtext">o haz clic para seleccionar (PDF o TXT)</div>
+                    <input type="file" class="file-input" id="fileInput" accept=".pdf,.txt" multiple>
+                </div>
+                
+                <div id="fileListContainer"></div>
+
+                <div class="query-section">
+                    <label for="userQuery">¿Tienes alguna pregunta sobre estos documentos? (Opcional)</label>
+                    <textarea id="userQuery" rows="3" placeholder="Ej: ¿Cuál es el periodo de vigencia en cada contrato?"></textarea>
+                </div>
+
+                <button class="analyze-btn" id="analyzeBtn">🔍 Analizar Documentos</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Procesando documentos...</p>
+                <p id="loadingStatus" style="font-size: 0.9rem; color: #666;">Iniciando análisis...</p>
+            </div>
+            
+            <div class="results" id="results">
+                <!-- Los resultados aparecerán aquí uno por uno -->
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
