@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('query', userQueryInput.value);
 
             try {
-                const response = await fetch('http://localhost:3000/analyze-single', {
+                const response = await fetch('https://legalai-analyzer-production-xxxx.up.railway.app/analyze-single', {
                     method: 'POST',
                     body: formData,
                 });
