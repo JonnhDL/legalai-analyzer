@@ -4,14 +4,55 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const pdf = require('pdf-parse');
 const formidable = require('formidable');
 
-// El prompt y las funciones de detección (cópialas de tu versión anterior)
-const LEGAL_ANALYSIS_PROMPT = `...`; 
-const SPECIALIZED_PROMPTS = { ... };
-function detectDocumentType(content) { ... }
+// --- INICIO DE PROMPTS Y FUNCIONES (TODO INCLUIDO) ---
+
+const LEGAL_ANALYSIS_PROMPT = `
+Eres un abogado especialista en derecho contractual español con 15+ años de experiencia. Tu tarea es analizar el siguiente documento legal de forma exhaustiva pero comprensible para un directivo sin formación legal.
+INSTRUCCIONES DE ANÁLISIS:
+1.  **ESTRUCTURA DE RESPUESTA OBLIGATORIA:** Tu respuesta DEBE ser un único objeto JSON válido, sin texto adicional antes o después. El JSON debe contener las claves: "resumenEjecutivo", "riesgosCriticos", "riesgosMedios", "aspectosPositivos", "recomendacionesEspecificas", "proximosPasos", "respuestaConsulta".
+2.  **CONTENIDO DE LAS CLAVES:**
+    -   **resumenEjecutivo**: String. Un párrafo claro sobre las partes, objeto, duración y valor del documento.
+    -   **riesgosCriticos**: Array de objetos. Cada objeto con la estructura \\{titulo: "string", descripcion: "string", ubicacion: "string"\\}. Identifica riesgos como responsabilidad ilimitada, penalizaciones abusivas (>10%), etc. Si no hay, devuelve [].
+    -   **riesgosMedios**: Array de objetos. Cada objeto con la estructura \\{titulo: "string", descripcion: "string"\\}. Identifica riesgos como plazos ajustados, cláusulas ambiguas, etc. Si no hay, devuelve [].
+    -   **aspectosPositivos**: Array de objetos. Cada objeto con la estructura \\{fortaleza: "string", porque: "string"\\}. Identifica cláusulas bien redactadas o ventajosas. Si no hay, devuelve [].
+    -   **recomendacionesEspecificas**: Array de objetos. Cada objeto con la estructura \\{accion: "string", explicacion: "string"\\}. Deben ser consejos prácticos y accionables. Si no hay, devuelve [].
+    -   **proximosPasos**: Array de strings. Lista de 2-3 acciones inmediatas o a medio plazo.
+    -   **respuestaConsulta**: String. La respuesta a la pregunta específica del usuario sobre este documento. Si no hay pregunta, devuelve "N/A".
+3.  **REGLAS IMPORTANTES:**
+    -   Usa un lenguaje de negocio, no jerga legal.
+    -   Sé conciso y directo.
+    -   La ubicación del riesgo (Página X, Cláusula Y) es crucial.
+DOCUMENTO A ANALIZAR:
+`;
+
+const SPECIALIZED_PROMPTS = {
+    CONTRACT_SERVICES: `\n\nCONTEXTO DE ESPECIALIZACIÓN: Esto parece un Contrato de Servicios. Presta especial atención a: Alcance del trabajo (SOW), entregables, SLAs, condiciones de pago, propiedad intelectual y responsabilidad.`,
+    NDA: `\n\nCONTEXTO DE ESPECIALIZACIÓN: Esto parece un Acuerdo de Confidencialidad (NDA). Enfócate en: la definición de "Información Confidencial", duración de la obligación, exclusiones y consecuencias por incumplimiento.`,
+    EMPLOYMENT: `\n\nCONTEXTO DE ESPECIALIZACIÓN: Esto parece un Contrato Laboral. Analiza con detalle: Salario y beneficios, jornada, periodo de prueba, cláusulas de no competencia post-contractual y exclusividad.`,
+    LEASE: `\n\nCONTEXTO DE ESPECIALIZACIÓN: Esto parece un Contrato de Arrendamiento. Prioriza la revisión de: Duración del contrato y prórrogas, renta y su actualización (IPC), fianza, obras permitidas y responsabilidades de mantenimiento.`
+};
+
+function detectDocumentType(content) {
+    const contentLower = content.toLowerCase().substring(0, 3000);
+    const keywords = {
+        CONTRACT_SERVICES: ['servicios', 'prestación de servicios', 'desarrollo', 'consultoría', 'sla', 'alcance del trabajo'],
+        NDA: ['confidencialidad', 'secreto comercial', 'información confidencial', 'no divulgación', 'nda'],
+        EMPLOYMENT: ['trabajador', 'empleado', 'salario', 'jornada laboral', 'contrato de trabajo'],
+        LEASE: ['arrendamiento', 'arrendador', 'arrendatario', 'alquiler', 'inmueble', 'local comercial']
+    };
+    for (const [type, keywordList] of Object.entries(keywords)) {
+        for (const keyword of keywordList) {
+            if (contentLower.includes(keyword)) return type;
+        }
+    }
+    return 'GENERAL';
+}
+// --- FIN DE PROMPTS Y FUNCIONES ---
+
 
 // Esta es la función principal que Vercel/Netlify ejecutará
 module.exports = async (req, res) => {
-    // Permitir CORS
+    // Permitir CORS para que el frontend pueda llamar a esta API
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -24,7 +65,7 @@ module.exports = async (req, res) => {
 
     try {
         if (!process.env.GOOGLE_API_KEY) {
-            console.error("[ERROR FATAL] La variable GOOGLE_API_KEY no se encontró.");
+            console.error("[ERROR FATAL] La variable de entorno GOOGLE_API_KEY no se encontró.");
             return res.status(500).json({ error: 'Error de configuración del servidor: API Key no encontrada.' });
         }
         console.log("--- [LOG 2] API Key encontrada. ---");
