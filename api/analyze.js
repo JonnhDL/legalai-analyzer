@@ -1,28 +1,13 @@
+// Importamos las librerías necesarias
 require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
-const pdf = require('pdf-parse');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { v4: uuidv4 } = require('uuid');
+const pdf = require('pdf-parse');
 
-const app = express();
-const port = 3000;
-
-app.use(cors());
-app.use(express.json());
-const upload = multer({ storage: multer.memoryStorage() });
-
-if (!process.env.GOOGLE_API_KEY) {
-    throw new Error("La variable GOOGLE_API_KEY no está definida en el archivo .env");
-}
+// Configuración de la IA de Google
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// =================================================================================
-// SECCIÓN DE PROMPTS AVANZADOS
-// =================================================================================
-
+// El prompt largo y detallado que ya teníamos
 const LEGAL_ANALYSIS_PROMPT = `
 Eres un abogado especialista en derecho contractual español con 15+ años de experiencia. Tu tarea es analizar el siguiente documento legal de forma exhaustiva pero comprensible para un directivo sin formación legal.
 
@@ -55,7 +40,7 @@ const SPECIALIZED_PROMPTS = {
 };
 
 function detectDocumentType(content) {
-    const contentLower = content.toLowerCase().substring(0, 3000); // Analizar solo el inicio para eficiencia
+    const contentLower = content.toLowerCase().substring(0, 3000);
     const keywords = {
         CONTRACT_SERVICES: ['servicios', 'prestación de servicios', 'desarrollo', 'consultoría', 'sla', 'alcance del trabajo'],
         NDA: ['confidencialidad', 'secreto comercial', 'información confidencial', 'no divulgación', 'nda'],
@@ -64,59 +49,62 @@ function detectDocumentType(content) {
     };
     for (const [type, keywordList] of Object.entries(keywords)) {
         for (const keyword of keywordList) {
-            if (contentLower.includes(keyword)) {
-                return type;
-            }
+            if (contentLower.includes(keyword)) return type;
         }
     }
     return 'GENERAL';
 }
 
-// =================================================================================
-// RUTA DE LA API - ACTUALIZADA
-// =================================================================================
 
-app.post('/api/analyze', upload.single('document'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: "No se subió archivo." });
-    
-    const userQuery = req.body.query || "";
-    console.log(`Procesando: ${req.file.originalname}`);
+// Esta es la función principal que Vercel ejecutará
+module.exports = async (req, res) => {
+    // Permitir CORS para que el frontend pueda llamar a esta API
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    try {
-        let text = '';
-        if (req.file.mimetype === 'application/pdf') {
-            text = (await pdf(req.file.buffer)).text;
-        } else if (req.file.mimetype === 'text/plain') {
-            text = req.file.buffer.toString('utf8');
-        } else {
-            return res.status(400).json({ error: "Formato de archivo no soportado." });
-        }
-
-        if (!text.trim()) return res.status(400).json({ error: "Documento vacío." });
-
-        const docType = detectDocumentType(text);
-        console.log(`Tipo de documento detectado: ${docType}`);
-        
-        let finalPrompt = LEGAL_ANALYSIS_PROMPT;
-        finalPrompt += SPECIALIZED_PROMPTS[docType] || '';
-        finalPrompt += "\n\n--- INICIO DEL DOCUMENTO ---\n" + text + "\n--- FIN DEL DOCUMENTO ---";
-        if (userQuery) {
-            finalPrompt += `\n\n--- CONSULTA ADICIONAL DEL USUARIO ---\nConsiderando el documento, responde a esta pregunta específica: "${userQuery}"`;
-        }
-        
-        const result = await model.generateContent(finalPrompt);
-        const response = await result.response;
-        const analysisText = response.text();
-        
-        const cleanedText = analysisText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const analysisJson = JSON.parse(cleanedText);
-        res.json(analysisJson);
-
-    } catch (error) {
-        console.error(`Error procesando ${req.file.originalname}:`, error);
-        res.status(500).json({ error: "Error al comunicarse con la IA o procesar el documento." });
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
     }
-});
 
-// Exporta la app para Vercel
-module.exports = app;
+    // Este es un truco para procesar 'multipart/form-data' en una función serverless
+    const formidable = require('formidable');
+    const form = formidable();
+
+    form.parse(req, async (err, fields, files) => {
+        if (err || !files.document || !files.document[0]) {
+            return res.status(500).json({ error: 'Error procesando el archivo subido.' });
+        }
+
+        try {
+            const file = files.document[0];
+            const userQuery = fields.query[0] || "";
+            
+            const dataBuffer = require('fs').readFileSync(file.filepath);
+            const data = await pdf(dataBuffer);
+            const text = data.text;
+            
+            if (!text.trim()) return res.status(400).json({ error: "Documento vacío." });
+            
+            const docType = detectDocumentType(text);
+            let finalPrompt = LEGAL_ANALYSIS_PROMPT + (SPECIALIZED_PROMPTS[docType] || '');
+            finalPrompt += `\n\n--- INICIO DEL DOCUMENTO ---\n${text}\n--- FIN DEL DOCUMENTO ---`;
+            if (userQuery) {
+                finalPrompt += `\n\n--- CONSULTA ADICIONAL DEL USUARIO ---\nResponde a esta pregunta: "${userQuery}"`;
+            }
+            
+            const result = await model.generateContent(finalPrompt);
+            const response = await result.response;
+            const analysisText = response.text();
+            
+            const cleanedText = analysisText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const analysisJson = JSON.parse(cleanedText);
+            
+            res.status(200).json(analysisJson);
+
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: "Error al comunicarse con la IA." });
+        }
+    });
+};

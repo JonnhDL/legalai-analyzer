@@ -1,17 +1,11 @@
 {
-  "name": "legalai-analyzer-root",
+  "name": "legalai-analyzer-serverless",
   "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "start": "node backend/server.js"
-  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "multer": "^2.0.1",
-    "pdf-parse": "^1.1.1",
-    "uuid": "^11.1.0"
+    "formidable": "^3.5.1",
+    "pdf-parse": "^1.1.1"
   }
 }

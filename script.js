@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let selectedFiles = [];
 
-    // Manejadores de eventos para la subida de archivos
     uploadArea.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files));
     uploadArea.addEventListener('dragover', (e) => e.preventDefault());
@@ -26,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFileList();
     }
 
-    // Muestra la lista de archivos seleccionados
     function renderFileList() {
         fileListContainer.innerHTML = '';
         selectedFiles.forEach((file, index) => {
@@ -38,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
         analyzeBtn.style.display = selectedFiles.length > 0 ? 'block' : 'none';
     }
 
-    // Permite eliminar archivos de la lista antes de analizar
     fileListContainer.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
             const index = e.target.dataset.index;
@@ -47,14 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Evento principal al hacer clic en "Analizar"
     analyzeBtn.addEventListener('click', async () => {
         if (selectedFiles.length === 0) {
             alert("Por favor, selecciona al menos un archivo.");
             return;
         }
 
-        // Prepara la UI para el análisis
         uploadContainer.style.display = 'none';
         loading.style.display = 'block';
         results.style.display = 'block';
@@ -62,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const totalFiles = selectedFiles.length;
 
-        // Bucle para analizar cada archivo individualmente
         for (let i = 0; i < totalFiles; i++) {
             const file = selectedFiles[i];
             loadingStatus.textContent = `Analizando archivo ${i + 1} de ${totalFiles}: ${file.name}`;
@@ -72,17 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('query', userQueryInput.value);
 
             try {
-                // LÓGICA CORREGIDA PARA LA URL DE LA API
-                // Determina si estamos en local o en producción (Vercel)
-                const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                    ? 'http://localhost:3000/api/analyze' 
-                    : '/api/analyze';
+                // RUTA DE API PARA VERCEL SERVERLESS FUNCTIONS
+                const apiUrl = '/api/analyze';
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     body: formData,
                 });
-                // FIN DE LA LÓGICA CORREGIDA
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -97,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Finaliza la carga y añade el botón de reiniciar
         loading.style.display = 'none';
         const reloadButton = document.createElement('button');
         reloadButton.className = 'reload-btn';
@@ -106,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
         results.appendChild(reloadButton);
     });
 
-    // Muestra el resultado de un análisis exitoso
     function displaySingleResult(fileName, data) {
         const resultDiv = document.createElement('div');
         resultDiv.className = 'individual-result';
@@ -135,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
         results.appendChild(resultDiv);
     }
     
-    // Muestra un error si un análisis falla
     function displayError(fileName, message) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'individual-result';
@@ -144,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
         results.appendChild(errorDiv);
     }
 
-    // Formatea listas de strings simples
     function formatList(items) {
         if (!items || items.length === 0) return '<li>No disponible.</li>';
         return items.map(item => `<li>${item}</li>`).join('');
