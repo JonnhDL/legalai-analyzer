@@ -1,3 +1,13 @@
+# Configuración de build para el proyecto
 [build]
-  # No necesitamos un comando de build para el frontend
-  command = "echo 'No build command'"¡Excelente! ¡Hemos avanzado!
+  # El frontend no necesita un paso de build, se publica desde la raíz
+  publish = "."
+  
+# Configuración explícita para las funciones serverless
+[functions]
+  # Directorio donde se encuentran las funciones
+  directory = "api/"
+  # Especifica que las dependencias de las funciones están en el `package.json` principal
+  # y deben ser instaladas y empaquetadas.
+  external_node_modules = ["@google/generative-ai", "formidable", "pdf-parse"]
+  node_bundler = "esbuild"
