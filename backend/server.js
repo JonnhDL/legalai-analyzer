@@ -20,7 +20,7 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // =================================================================================
-// INICIO DE LA SECCIÓN DE PROMPTS AVANZADOS (CORREGIDO)
+// SECCIÓN DE PROMPTS AVANZADOS
 // =================================================================================
 
 const LEGAL_ANALYSIS_PROMPT = `
@@ -73,10 +73,10 @@ function detectDocumentType(content) {
 }
 
 // =================================================================================
-// FIN DE LA SECCIÓN DE PROMPTS
+// RUTA DE LA API - ACTUALIZADA
 // =================================================================================
 
-app.post('/analyze-single', upload.single('document'), async (req, res) => {
+app.post('/api/analyze', upload.single('document'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No se subió archivo." });
     
     const userQuery = req.body.query || "";
@@ -94,19 +94,16 @@ app.post('/analyze-single', upload.single('document'), async (req, res) => {
 
         if (!text.trim()) return res.status(400).json({ error: "Documento vacío." });
 
-        // 1. Detectar el tipo de documento
         const docType = detectDocumentType(text);
         console.log(`Tipo de documento detectado: ${docType}`);
         
-        // 2. Construir el prompt final
         let finalPrompt = LEGAL_ANALYSIS_PROMPT;
-        finalPrompt += SPECIALIZED_PROMPTS[docType] || ''; // Añadir contexto especializado si existe
+        finalPrompt += SPECIALIZED_PROMPTS[docType] || '';
         finalPrompt += "\n\n--- INICIO DEL DOCUMENTO ---\n" + text + "\n--- FIN DEL DOCUMENTO ---";
         if (userQuery) {
             finalPrompt += `\n\n--- CONSULTA ADICIONAL DEL USUARIO ---\nConsiderando el documento, responde a esta pregunta específica: "${userQuery}"`;
         }
         
-        // 3. Enviar a la IA y obtener respuesta
         const result = await model.generateContent(finalPrompt);
         const response = await result.response;
         const analysisText = response.text();
@@ -121,6 +118,5 @@ app.post('/analyze-single', upload.single('document'), async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`✅ Servidor V4.1 (Experto Legal Corregido) funcionando en http://localhost:${port}`);
-});
+// Exporta la app para Vercel
+module.exports = app;
