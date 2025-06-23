@@ -1,5 +1,5 @@
 {
-  "name": "legalai-analyzer",
+  "name": "legalai-analyzer-root",
   "version": "1.0.0",
   "private": true,
   "scripts": {
