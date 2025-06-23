@@ -1,13 +1,9 @@
-# Configuración de build para el proyecto
+# Configuración de Build para el proyecto
 [build]
-  # El frontend no necesita un paso de build, se publica desde la raíz
+  # El frontend no necesita build, se publica desde la raíz
   publish = "."
-  
-# Configuración explícita para las funciones serverless
+
+# Configuración para las funciones Serverless
 [functions]
-  # Directorio donde se encuentran las funciones
+  # Le decimos a Netlify que nuestro código de funciones está en la carpeta "api"
   directory = "api/"
-  # Especifica que las dependencias de las funciones están en el `package.json` principal
-  # y deben ser instaladas y empaquetadas.
-  external_node_modules = ["@google/generative-ai", "formidable", "pdf-parse"]
-  node_bundler = "esbuild"
