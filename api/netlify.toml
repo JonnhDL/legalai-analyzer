@@ -1,10 +1,3 @@
-# Este es el comando de build principal. No necesitamos uno para el frontend.
 [build]
-  # Netlify servirá los archivos estáticos desde la raíz por defecto.
-  
-# Esta sección le dice a Netlify cómo manejar las funciones de la carpeta 'api'
-[functions]
-  # Especifica que nuestras funciones están en la carpeta 'api'
-  directory = "api/"
-  # Le dice a Netlify que debe incluir los paquetes de node_modules en las funciones
-  node_bundler = "esbuild"
+  # No necesitamos un comando de build para el frontend
+  command = "echo 'No build command'"¡Excelente! ¡Hemos avanzado!
