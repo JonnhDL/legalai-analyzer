@@ -1,9 +1,5 @@
-# Configuración de Build para el proyecto
 [build]
-  # El frontend no necesita build, se publica desde la raíz
   publish = "."
 
-# Configuración para las funciones Serverless
 [functions]
-  # Le decimos a Netlify que nuestro código de funciones está en la carpeta "api"
   directory = "api/"
